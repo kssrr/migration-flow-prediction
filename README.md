@@ -4,9 +4,10 @@ Predicting bilateral migration flows using LSTM-RNNs
 
 ## TODO
 
-* One-hot encoding for either dyads or origin and destination
-    - Would be great if we could do this already for the model-based imputation, but unfortunately drastically increases the computation time there.
-* Non-random train-test split:
-    - Look into predicting last year in series for testing, second to last for validation, and all earlier years for training.
-* Experiment with different architectures and sequence lengths
-* Build proper competitors to benchmark against (conventional time series models, MLP, etc.).
+* Find better/more data
+    - Maybe not only OECD countries? Problem here is that whole time series of features are missing for many non-OECD countries and have to be entirely imputed.
+    - Dyadic data would be good/interesting
+* Improve LSTM
+    - Does not perform better than conventional models (`benchmarks.ipynb`)
+* Non-random train-test split
+    - Predict last years in the series as test set (forecasting)
