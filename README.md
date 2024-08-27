@@ -1,10 +1,10 @@
-# migration-flow-prediction
+# Forecasting migration
 
 Predicting net migration using ARIMA, Lasso-Regression, XGBoost & LSTM-RNNs.
 
 ## Reproduce
 
-The preprocessing is applied in [`src/preprocessing.ipynb`](https://github.com/kssrr/migration-flow-prediction/blob/main/src/preprocessing.ipynb). The benchmark-models (ARIMA, Lasso-Regression & XGBoost) are fit in [`benchmarks.ipynb`](https://github.com/kssrr/migration-flow-prediction/blob/main/src/benchmarks.ipynb). 
+The preprocessing is applied in [`src/preprocessing.ipynb`](https://github.com/kssrr/migration-flow-prediction/blob/main/src/preprocessing.ipynb). The benchmark-models (ARIMA, Lasso-Regression & XGBoost) are fit in [`src/benchmarks.ipynb`](https://github.com/kssrr/migration-flow-prediction/blob/main/src/benchmarks.ipynb). 
 
 ## Sneak Peek
 
