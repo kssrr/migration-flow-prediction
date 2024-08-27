@@ -1,3 +1,4 @@
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -21,6 +22,9 @@ device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cp
 print(f"Using {device}")
 
 data = pd.read_csv("migration-flow-prediction/data/final/preprocessed_full.csv", index_col=[0])
+
+omin, omax = -2, 2
+# data["net_migration"] = minmax_scale(data["net_migration"])
 
 data = data[data["year"] < 2022][["iso3", "year", "net_migration"]]
 data = data.pivot(index='year', columns='iso3', values='net_migration')
@@ -90,29 +94,35 @@ val_loader = DataLoader(TimeSeriesDataset(X_val.unsqueeze(-1), y_val), batch_siz
 test_loader = DataLoader(TimeSeriesDataset(X_test.unsqueeze(-1), y_test), batch_size=32, shuffle=False)
 
 class LSTMModel(nn.Module):
-    def __init__(self, input_size, hidden_size, output_size, num_layers):
+    def __init__(self, input_size, hidden_size, hidden_size2, output_size, num_layers):
         super(LSTMModel, self).__init__()
         self.lstm = nn.LSTM(input_size, hidden_size, num_layers, batch_first=True)
-        self.fc = nn.Linear(hidden_size, hidden_size)
+        self.fc1 = nn.Linear(hidden_size, hidden_size2)
+        self.fc2 = nn.Linear(hidden_size2, output_size)
         self.dropout = nn.Dropout(0.6)
-        self.fc2 = nn.Linear(hidden_size, hidden_size)
-        self.fc2 = nn.Linear(hidden_size, hidden_size)
-        self.fc = nn.Linear(hidden_size, output_size)
 
-    
     def forward(self, x):
         h0 = torch.zeros(self.lstm.num_layers, x.size(0), self.lstm.hidden_size).to(x.device)
         c0 = torch.zeros(self.lstm.num_layers, x.size(0), self.lstm.hidden_size).to(x.device)
         out, _ = self.lstm(x, (h0, c0))
-        out = self.fc(out[:, -1, :])
+        out = out[:, -1, :]  # Get the output from the last time step
+        out = self.fc1(out)
+        out = F.relu(out)  # Add activation function
+        out = self.dropout(out)
+        out = self.fc2(out)
         return out
-    
-input_size = 1
-hidden_size = 128
-num_layers = 2
-output_size = 1
 
-model = LSTMModel(input_size=input_size, hidden_size=hidden_size, output_size=output_size, num_layers=num_layers)
+
+
+    
+input_size = 1  # Number of features per time step; just use the first sequence to check...
+hidden_size = 256
+hidden_size2 = 128
+num_layers = 3
+output_size = 1  # Predicting a single value (migration flow) for the next year
+
+model = LSTMModel(input_size=input_size, hidden_size=hidden_size, hidden_size2=hidden_size2, num_layers=num_layers, output_size=output_size)
+# model = LSTMModel(input_size=input_size, hidden_size=hidden_size, output_size=output_size, num_layers=num_layers)
 
 criterion = nn.HuberLoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
@@ -242,6 +252,10 @@ metrics
 
 print(f"Original Matrics: {metrics}")
 
+"""scale = omax - omin
+
+print(f"Metrics rescaled to original units:\n\nMSE: {metrics['MSE'] * (scale ** 2)}\nRMSE: {metrics['RMSE'] * scale}\nMAE: {metrics['MAE'] * scale}")
+"""
 def collect_predictions(model: LSTMModel, data_loader: DataLoader) -> tuple:
     model.eval()
     predictions = []
@@ -273,7 +287,7 @@ plt.plot([min_val, max_val], [min_val, max_val], 'r--', linewidth=1)
 plt.xlabel('Actual Values')
 plt.ylabel('Predicted Values')
 plt.title('Actual vs. Predicted Net Migration\n(Test Set)')
-plt.show()
+# plt.show()
 
 train_pred, train_act = collect_predictions(model, train_loader)
 val_pred, val_act = collect_predictions(model, val_loader)
@@ -308,7 +322,7 @@ plt.plot([min_val, max_val], [min_val, max_val], 'k--', linewidth=1)
 plt.xlabel('Actual Values')
 plt.ylabel('Predicted Values')
 plt.title('Actual vs. Predicted Net Migration')
-plt.show()
+# plt.show()
 
 all_predictions["error"] = all_predictions["predicted"] - all_predictions["actual"]
 ax = sns.scatterplot(
@@ -325,10 +339,10 @@ plt.axhline(y=0, color="black")
 plt.xlabel('Predicted Values')
 plt.ylabel('Residual')
 plt.title('Residuals')
-plt.show()
-
+# plt.show()
 
 """
-new
-Original Matrics: {'MSE': 0.00044949207261067513, 'RMSE': 0.02120122809203927, 'MAE': 0.00625356102162706}
+Original Matrics: {'MSE': 0.00038581134205222564, 'RMSE': 0.01964208089923839, 'MAE': 0.008084576310856002}
 """
+
+
